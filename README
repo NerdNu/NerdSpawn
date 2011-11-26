@@ -1,0 +1,6 @@
+NerdSpawn
+=======
+
+A simple spawn control plugin that forces an exact spawn location, adds a
+/spawn command, and can allow bed-based spawn. Has an optional dependency on
+Permissions 2 otherwise only depends on Bukkit.
