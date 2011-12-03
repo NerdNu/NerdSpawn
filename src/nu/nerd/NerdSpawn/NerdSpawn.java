@@ -30,7 +30,7 @@ public class NerdSpawn extends JavaPlugin
         // just in case someone edited the file
         reloadConfig();
 
-        return new Location(Bukkit.getServer().getWorld(worldName),
+        return new Location(Bukkit.getWorld(worldName),
                 getConfig().getDouble("spawn-location.x"),
                 getConfig().getDouble("spawn-location.y"),
                 getConfig().getDouble("spawn-location.z"),

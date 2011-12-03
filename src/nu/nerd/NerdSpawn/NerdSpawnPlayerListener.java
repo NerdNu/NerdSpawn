@@ -2,8 +2,11 @@ package nu.nerd.NerdSpawn;
 
 import java.io.File;
 import java.util.ArrayList;
+import net.minecraft.server.EntityPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerPreLoginEvent;
@@ -43,6 +46,18 @@ public class NerdSpawnPlayerListener extends PlayerListener
                     message = message.replaceAll("&" + Integer.toHexString(c.getCode()), c.toString());
 
                 Bukkit.getServer().broadcastMessage(message);
+            }
+        }
+        else {
+            if (plugin.getConfig().getBoolean("stop-login-teleport")) {
+                EntityPlayer entity = ((CraftPlayer)event.getPlayer()).getHandle();
+                Location loc = new Location(Bukkit.getWorld(plugin.worldName),
+                        entity.lastX,
+                        entity.lastY,
+                        entity.lastZ,
+                        entity.lastYaw,
+                        entity.lastPitch);
+                event.getPlayer().teleport(loc);
             }
         }
     }

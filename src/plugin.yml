@@ -1,6 +1,6 @@
 name: NerdSpawn
 main: nu.nerd.NerdSpawn.NerdSpawn
-version: 0.1
+version: 1.0
 author: Travis Watkins
 
 commands:
