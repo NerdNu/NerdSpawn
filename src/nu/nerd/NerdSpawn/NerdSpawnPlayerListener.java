@@ -6,6 +6,8 @@ import net.minecraft.server.EntityPlayer;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.craftbukkit.entity.CraftPlayer;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerListener;
@@ -50,14 +52,41 @@ public class NerdSpawnPlayerListener extends PlayerListener
         }
         else {
             if (plugin.getConfig().getBoolean("stop-login-teleport")) {
+                //we only want to stop certain teleportation cases
                 EntityPlayer entity = ((CraftPlayer)event.getPlayer()).getHandle();
-                Location loc = new Location(Bukkit.getWorld(plugin.worldName),
+                World world = Bukkit.getWorld(plugin.worldName);
+                Location loc = new Location(world,
                         entity.lastX,
                         entity.lastY,
                         entity.lastZ,
                         entity.lastYaw,
                         entity.lastPitch);
-                event.getPlayer().teleport(loc);
+                Location loc2 = new Location(world,
+                        entity.lastX,
+                        entity.lastY + 1,
+                        entity.lastZ,
+                        entity.lastYaw,
+                        entity.lastPitch);
+
+                Material feet = world.getBlockAt(loc).getType();
+                Material head = world.getBlockAt(loc2).getType();
+                boolean teleport = false;
+
+                if (head == Material.TRAP_DOOR || feet == Material.TRAP_DOOR)
+                    teleport = true;
+                if (head == Material.SAND || feet == Material.SAND)
+                    teleport = true;
+                if (head == Material.GRAVEL || feet == Material.GRAVEL)
+                    teleport = true;
+                if (head == Material.DETECTOR_RAIL || feet == Material.DETECTOR_RAIL)
+                    teleport = true;
+                if (head == Material.POWERED_RAIL || feet == Material.POWERED_RAIL)
+                    teleport = true;
+                if (head == Material.RAILS || feet == Material.RAILS)
+                    teleport = true;
+
+                if (teleport)
+                    event.getPlayer().teleport(loc);
             }
         }
     }
