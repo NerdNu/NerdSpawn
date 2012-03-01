@@ -7,4 +7,3 @@ spawn-location:
 show-join-message: true
 join-message: "&5Welcome %u to the server!"
 allow-bed-spawn: true
-stop-login-teleport: false

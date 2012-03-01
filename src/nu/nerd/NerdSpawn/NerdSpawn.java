@@ -1,27 +1,19 @@
-package nu.nerd.NerdSpawn;
+package nu.nerd.nerdspawn;
 
-import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileReader;
-import java.util.Properties;
-import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 
 public class NerdSpawn extends JavaPlugin
 {
-    private final NerdSpawnPlayerListener playerListener = new NerdSpawnPlayerListener(this);
+    private final NerdSpawnListener listener = new NerdSpawnListener(this);
     public static final Logger log = Logger.getLogger("Minecraft");
     public String worldName;
 
@@ -39,37 +31,15 @@ public class NerdSpawn extends JavaPlugin
     }
 
     @Override
-    public void onDisable()
-    {
-        log.log(Level.INFO, "[" + getDescription().getName() + "] " + getDescription().getVersion() + " disabled.");
-    }
-
-    @Override
     public void onEnable()
     {
-        PluginManager pm = getServer().getPluginManager();
-        pm.registerEvent(Event.Type.PLAYER_PRELOGIN, playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_JOIN,     playerListener, Priority.Normal, this);
-        pm.registerEvent(Event.Type.PLAYER_RESPAWN,  playerListener, Priority.Normal, this);
-
-        try {
-            Properties config = new Properties();
-            config.load(new BufferedReader(new FileReader("server.properties")));
-            worldName = config.getProperty("level-name");
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-            pm.disablePlugin(this);
-            return;
-        }
+        getServer().getPluginManager().registerEvents(listener, this);
 
         File config = new File(getDataFolder() + File.separator + "config.yml");
         if (!config.exists()) {
             getConfig().options().copyDefaults(true);
             saveConfig();
         }
-
-        log.log(Level.INFO, "[" + getDescription().getName() +"] " + getDescription().getVersion() + " enabled.");
     }
 
     @Override
@@ -88,31 +58,20 @@ public class NerdSpawn extends JavaPlugin
                     return true;
                 }
             }
-            return spawn((Player)sender);
+            ((Player) sender).teleport(getSpawnLocation());
+            return true;
         }
 
         if (command.getName().equalsIgnoreCase("setspawn")) {
-            return setSpawn((Player)sender);
+            setSpawn((Player)sender);
+            return true;
         }
 
-        return true;
+        return false;
     }
 
-    private boolean spawn(Player player)
+    private void setSpawn(Player player)
     {
-        if (!Permissions.hasPermission(player, Permissions.SPAWN))
-            return true;
-
-        player.teleport(getSpawnLocation());
-
-        return true;
-    }
-
-    private boolean setSpawn(Player player)
-    {
-        if (!Permissions.hasPermission(player, Permissions.SETSPAWN))
-            return true;
-
         Location loc = player.getLocation();
         getConfig().set("spawn-location.x", loc.getX());
         getConfig().set("spawn-location.y", loc.getY());
@@ -130,7 +89,5 @@ public class NerdSpawn extends JavaPlugin
                 loc.getBlockX() + ", " +
                 loc.getBlockY() + ", " +
                 loc.getBlockZ());
-
-        return true;
     }
 }
