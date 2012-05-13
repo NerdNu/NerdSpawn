@@ -1,6 +1,6 @@
 name: NerdSpawn
 main: nu.nerd.nerdspawn.NerdSpawn
-version: 1.0
+version: 2.0
 author: Travis Watkins
 
 commands:
@@ -17,6 +17,12 @@ commands:
     usage: |
            Incorrect usage of /<command>. Examples:
            /<command> - Sets spawn location
+  setfirstspawn:
+    description: Sets the initial spawn location
+    permission: nerdspawn.setfirstspawn
+    usage: |
+           Incorrect usage of /<command>. Examples:
+           /<command> - Sets initial spawn location
 
 permissions:
   nerdspawn:
@@ -24,10 +30,14 @@ permissions:
     children:
       nerdspawn.spawn: true
       nerdspawn.setspawn: true
+      nerdspawn.setfirstspawn: true
   nerdspawn.spawn:
     description: Allow a player to teleport to spawn
     default: op
   nerdspawn.setspawn:
     description: Allow a player to set the spawn location
+    default: op
+  nerdspawn.setfirstspawn:
+    description: Allow a player to set the initial spawn location
     default: op
 

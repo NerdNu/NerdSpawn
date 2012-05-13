@@ -20,8 +20,11 @@ public class NerdSpawnListener implements Listener
     public void onPlayerJoin(PlayerJoinEvent event)
     {
         if (!event.getPlayer().hasPlayedBefore()) {
-            event.getPlayer().teleport(plugin.getSpawnLocation());
-
+        	if (plugin.getConfig().getBoolean("first-join-alternate-spawn")) {
+        		event.getPlayer().teleport(plugin.getFirstSpawnLocation());
+        	} else {
+        		event.getPlayer().teleport(plugin.getSpawnLocation());
+        	}
             if (plugin.getConfig().getBoolean("show-join-message")) {
                 String message = plugin.getConfig().getString("join-message");
                 message = message.replaceAll("%u", event.getPlayer().getName());
