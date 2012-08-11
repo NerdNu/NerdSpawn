@@ -29,7 +29,7 @@ public class NerdSpawnListener implements Listener
                 String message = plugin.getConfig().getString("join-message");
                 message = message.replaceAll("%u", event.getPlayer().getName());
                 for (ChatColor c : ChatColor.values())
-                    message = message.replaceAll("&" + Integer.toHexString(c.getChar()), c.toString());
+                    message = message.replaceAll(("&" + c.getChar()), c.toString());
 
                 plugin.getServer().broadcastMessage(message);
             }
