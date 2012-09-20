@@ -1,9 +1,11 @@
 package nu.nerd.nerdspawn;
 
 import org.bukkit.ChatColor;
+import org.bukkit.World.Environment;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 
 
@@ -41,5 +43,12 @@ public class NerdSpawnListener implements Listener
     {
         if (!event.isBedSpawn() || !plugin.getConfig().getBoolean("allow-bed-spawn"))
             event.setRespawnLocation(plugin.getSpawnLocation());
+    }
+
+    @EventHandler
+    public void onPlayerPortal(PlayerPortalEvent event) {
+        if(event.getFrom().getWorld().getEnvironment() == Environment.THE_END && !plugin.getConfig().getBoolean("allow-bed-spawn")) {
+            event.setTo(plugin.getSpawnLocation());
+        }
     }
 }
