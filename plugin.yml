@@ -1,6 +1,8 @@
 name: NerdSpawn
 main: nu.nerd.nerdspawn.NerdSpawn
-version: 2.0
+version: ${project.version}
+description: ${project.description}
+website: ${project.url}
 author: Travis Watkins
 
 commands:
