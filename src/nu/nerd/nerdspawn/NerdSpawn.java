@@ -27,20 +27,6 @@ public class NerdSpawn extends JavaPlugin
 				(float)getConfig().getDouble("spawn-location.pitch"));
 	}
 
-	/* Spawn to send to on first join */
-	public Location getFirstSpawnLocation()
-	{
-		reloadConfig();
-
-		return new Location(
-				getServer().getWorlds().get(0),
-				getConfig().getDouble("first-spawn-location.x"),
-				getConfig().getDouble("first-spawn-location.y"),
-				getConfig().getDouble("first-spawn-location.z"),
-				(float)getConfig().getDouble("first-spawn-location.yaw"),
-				(float)getConfig().getDouble("first-spawn-location.pitch"));
-	}
-
 	@Override
 	public void onEnable()
 	{
@@ -75,10 +61,6 @@ public class NerdSpawn extends JavaPlugin
 
 		if (command.getName().equalsIgnoreCase("setspawn")) {
 			setSpawn((Player) sender,"spawn-location");
-			return true;
-		}
-		if (command.getName().equalsIgnoreCase("setfirstspawn")) {
-			setSpawn((Player) sender,"first-spawn-location");
 			return true;
 		}
 
