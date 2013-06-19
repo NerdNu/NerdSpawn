@@ -1,16 +1,7 @@
-spawn-location:
-  x: 0.0
-  y: 70.0
-  z: 0.0
-  yaw: 0.0
-  pitch: 22.0
-first-spawn-location:
-  x: 10.0
-  y: 70.0
-  z: 10.0
-  yaw: 0.0
-  pitch: 22.0
+spawn:
+  location:
+  - world|0.0|70.0|0.0|0.0|0.0
 show-join-message: true
 join-message: "&5Welcome %u to the server!"
 allow-bed-spawn: true
-first-join-alternate-spawn: true
+many-spawn: false
