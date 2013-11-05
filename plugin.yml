@@ -7,39 +7,40 @@ author: Travis Watkins
 
 commands:
   spawn:
-    description: Teleports you to the spawn location
+    description: Teleports you to the spawn location.
     permission: nerdspawn.spawn
     usage: |
-           Incorrect usage of /<command>. Examples:
-           /<command> - Teleport to spawn
-           /<command> reload - Reloads configuration
+           Usage: /<command> - Teleport to spawn.
   setspawn:
-    description: Sets the spawn location
+    description: Sets the spawn location.
     permission: nerdspawn.setspawn
     usage: |
-           Incorrect usage of /<command>. Examples:
-           /<command> - Sets spawn location
-  setfirstspawn:
-    description: Sets the initial spawn location
-    permission: nerdspawn.setfirstspawn
+           Usage: /<command> - Sets spawn location.
+  nerdspawn:
+    description: Sets the spawn location
     usage: |
-           Incorrect usage of /<command>. Examples:
-           /<command> - Sets initial spawn location
+           Usage: /<command> reload - Reload configuration.           
+           Usage: /<command> list - List spawns.           
 
 permissions:
-  nerdspawn:
-    description: Allow a player all spawn permissions
+  nerdspawn.*:
+    description: Allow the use of all commands.
     children:
-      nerdspawn.spawn: true
-      nerdspawn.setspawn: true
-      nerdspawn.setfirstspawn: true
+    - nerdspawn.spawn
+    - nerdspawn.setspawn
+    - nerdspawn.reload
+    - nerdspawn.list
+    default: op
   nerdspawn.spawn:
-    description: Allow a player to teleport to spawn
+    description: Allow a player to teleport to spawn.
     default: op
   nerdspawn.setspawn:
-    description: Allow a player to set the spawn location
+    description: Allow a player to set the spawn location.
     default: op
-  nerdspawn.setfirstspawn:
-    description: Allow a player to set the initial spawn location
+  nerdspawn.reload:
+    description: Allow a player to reload the configuration.
+    default: op
+  nerdspawn.list:
+    description: Allow a player to list all the spawns.
     default: op
 
