@@ -12,6 +12,7 @@ import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerPortalEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.potion.PotionEffect;
 
 public class NerdSpawnListener implements Listener {
     private final NerdSpawn plugin;
@@ -48,11 +49,11 @@ public class NerdSpawnListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
+        Player player = event.getPlayer();
         if (event.isBedSpawn()) {
             boolean goToSpawn = false;
             if (plugin.getConfig().getBoolean("allow-bed-spawn")) {
                 if (plugin.getConfig().getBoolean("check-bed-radius")) {
-                    Player player = event.getPlayer();
                     Location deathLocation = deathLocations.get(player.getName());
                     if (deathLocation != null) {
                         double bedRadius = plugin.getConfig().getDouble("bed-radius", 15);
@@ -73,6 +74,12 @@ public class NerdSpawnListener implements Listener {
             if (goToSpawn) {
                 event.setRespawnLocation(plugin.getSpawnLocation());
             }
+        }
+
+        // Remove all potion effects. CombatTag lets players keep them when
+        // their NPC double dies.
+        for (PotionEffect effect : player.getPlayer().getActivePotionEffects()) {
+            player.removePotionEffect(effect.getType());
         }
     }
 
