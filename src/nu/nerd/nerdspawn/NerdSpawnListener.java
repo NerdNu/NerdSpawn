@@ -56,13 +56,16 @@ public class NerdSpawnListener implements Listener {
                 if (plugin.getConfig().getBoolean("check-bed-radius")) {
                     Location deathLocation = deathLocations.get(player.getName());
                     if (deathLocation != null) {
-                        double bedRadius = plugin.getConfig().getDouble("bed-radius", 15);
-                        if (player.getBedSpawnLocation().distanceSquared(deathLocation) < bedRadius * bedRadius) {
-                            goToSpawn = true;
-                            player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
-                            if (plugin.getConfig().getBoolean("clear-bed-spawn")) {
-                                player.setBedSpawnLocation(null);
-                                player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
+                        Location bedSpawnLocation = player.getBedSpawnLocation();
+                        if (deathLocation.getWorld().equals(bedSpawnLocation.getWorld())) {
+                            double bedRadius = plugin.getConfig().getDouble("bed-radius", 15);
+                            if (bedSpawnLocation.distanceSquared(deathLocation) < bedRadius * bedRadius) {
+                                goToSpawn = true;
+                                player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
+                                if (plugin.getConfig().getBoolean("clear-bed-spawn")) {
+                                    player.setBedSpawnLocation(null);
+                                    player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
+                                }
                             }
                         }
                     }
