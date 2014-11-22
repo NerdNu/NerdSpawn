@@ -50,33 +50,10 @@ public class NerdSpawnListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
-        if (event.isBedSpawn()) {
-            boolean goToSpawn = false;
-            if (plugin.getConfig().getBoolean("allow-bed-spawn")) {
-                if (plugin.getConfig().getBoolean("check-bed-radius")) {
-                    Location deathLocation = deathLocations.get(player.getName());
-                    if (deathLocation != null) {
-                        Location bedSpawnLocation = player.getBedSpawnLocation();
-                        if (deathLocation.getWorld().equals(bedSpawnLocation.getWorld())) {
-                            double bedRadius = plugin.getConfig().getDouble("bed-radius", 15);
-                            if (bedSpawnLocation.distanceSquared(deathLocation) < bedRadius * bedRadius) {
-                                goToSpawn = true;
-                                player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
-                                if (plugin.getConfig().getBoolean("clear-bed-spawn")) {
-                                    player.setBedSpawnLocation(null);
-                                    player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
-                                }
-                            }
-                        }
-                    }
-                }
-            } else {
-                goToSpawn = true;
-            }
-
-            if (goToSpawn) {
-                event.setRespawnLocation(plugin.getSpawnLocation());
-            }
+        if (deathLocations.containsKey(player.getName())) {
+            event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), player.getBedSpawnLocation()));
+        } else {
+            event.setRespawnLocation(plugin.getSpawnLocation(player.getBedSpawnLocation()));
         }
 
         // Remove all potion effects. CombatTag lets players keep them when

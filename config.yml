@@ -8,3 +8,5 @@ many-spawn: false
 check-bed-radius: false
 bed-radius: 15.0
 clear-bed-spawn: true
+radial-spawning: false
+spawn-radius: 150.0

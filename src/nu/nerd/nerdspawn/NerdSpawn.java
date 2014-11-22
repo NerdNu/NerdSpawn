@@ -56,6 +56,12 @@ public class NerdSpawn extends JavaPlugin {
             player.sendMessage(message.toString());
         }
     }
+    
+    private double get2dDistSq(Location l1, Location l2) {
+        double diffX = l1.getX() - l2.getX();
+        double diffZ = l1.getZ() - l2.getZ();
+        return diffX * diffX + diffZ * diffZ;
+    }
 
     public Location getSpawnLocation() {
         if (getConfig().getBoolean("many-spawn") == true) {
@@ -63,6 +69,73 @@ public class NerdSpawn extends JavaPlugin {
             return stringToLocation(spawnList.get(r.nextInt(spawnList.size())));
         } else {
             return stringToLocation(spawnList.get(0));
+        }
+    }
+    
+    public Location getSpawnLocation(Location bed) {
+        if (bed == null) {
+            return getSpawnLocation();
+        } else {
+            int k = new Random().nextInt(spawnList.size() + 1);
+            return k == 0 ? bed : stringToLocation(spawnList.get(k - 1));
+        }
+    }
+    
+    public Location getSpawnLocation(Player player, Location center, Location bed) {
+        if (getConfig().getBoolean("radial-spawning")) {
+            List<Location> candidates = new ArrayList<Location>();
+            double minDist = -1.0;
+            Location closest = null;
+            double radius = getConfig().getDouble("spawn-radius");
+            double rsq = radius * radius;
+            
+            if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
+                if (bed.getWorld() == center.getWorld()) {
+                    double dsq = get2dDistSq(center, bed);
+                    if (dsq <= rsq) {
+                        candidates.add(bed);
+                    } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
+                        closest = bed;
+                        minDist = dsq;
+                    }
+                }
+            }
+            
+            for (String s : spawnList) {
+                Location loc = stringToLocation(s);
+                if (loc.getWorld() == center.getWorld()) {
+                    double dsq = get2dDistSq(center, loc);
+                    if (dsq <= rsq) {
+                        candidates.add(loc);
+                    } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
+                        closest = loc;
+                        minDist = dsq;
+                    }
+                }
+            }
+            if (!candidates.isEmpty()) {
+                return candidates.get(new Random().nextInt(candidates.size()));
+            } else if (closest != null) {
+                return closest;
+            } else { // No spawns in that World
+                return getSpawnLocation(bed);
+            }
+        } else {
+            if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
+                double radius = getConfig().getDouble("bed-radius", 15);
+                if (getConfig().getBoolean("check-bed-radius") && get2dDistSq(center, bed) <= radius * radius) {
+                    player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
+                    if (getConfig().getBoolean("clear-bed-spawn")) {
+                        player.setBedSpawnLocation(null);
+                        player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
+                    }
+                    return getSpawnLocation();
+                } else {
+                    return bed;
+                }
+            } else {
+                return getSpawnLocation();
+            }
         }
     }
 
