@@ -49,11 +49,15 @@ public class NerdSpawn extends JavaPlugin {
         for (String spawn : spawnList) {
             Location loc = stringToLocation(spawn);
             message.setLength(0);
-            message.append(ChatColor.WHITE).append("(").append(index++).append(") ");
+            message.append(ChatColor.WHITE).append("(").append(index).append(") ");
+            if (index == 1) {
+                message.append(ChatColor.GRAY).append("[P] ");
+            }
             message.append(String.format("%s(%d, %d, %d, %s) %sP %5.3f Y %5.3f",
                 ChatColor.YELLOW, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName(),
                 ChatColor.GRAY, loc.getPitch(), loc.getYaw()));
             player.sendMessage(message.toString());
+            index++;
         }
     }
     
@@ -61,6 +65,10 @@ public class NerdSpawn extends JavaPlugin {
         double diffX = l1.getX() - l2.getX();
         double diffZ = l1.getZ() - l2.getZ();
         return diffX * diffX + diffZ * diffZ;
+    }
+    
+    public Location getPrimarySpawn() {
+        return stringToLocation(spawnList.get(0));
     }
 
     public Location getSpawnLocation() {
@@ -118,7 +126,7 @@ public class NerdSpawn extends JavaPlugin {
             } else if (closest != null) {
                 return closest;
             } else { // No spawns in that World
-                return getSpawnLocation(bed);
+                return getConfig().getBoolean("use-primary-spawn") ? getPrimarySpawn() : getSpawnLocation(bed);
             }
         } else {
             if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
@@ -217,8 +225,24 @@ public class NerdSpawn extends JavaPlugin {
                     }
                     return true;
                 }
+                if (args[0].equalsIgnoreCase("setprimary") && player.hasPermission(Permissions.SETSPAWN)) {
+                    try {
+                        // Parse 1-based indices.
+                        int index = Integer.parseInt(args[1]);
+                        if (index < 1 || index > spawnList.size()) {
+                            player.sendMessage(ChatColor.RED + "Index " + index + " is out of range.");
+                        } else {
+                            spawnList.add(0, spawnList.remove(index - 1));
+                            saveConfiguration();
+                            player.sendMessage(ChatColor.GOLD + "Spawn at index " + index + " moved to index 1.");
+                        }
+                    } catch (Exception ex) {
+                        player.sendMessage(ChatColor.RED + args[1] + " is not an integer.");
+                    }
+                    return true;
+                }
             }
-            player.sendMessage(ChatColor.GRAY + "Usage: /nerdspawn [reload | list | remove <number>]");
+            player.sendMessage(ChatColor.GRAY + "Usage: /nerdspawn [reload | list | remove <number> | setprimary <number>]");
             return true;
         }
 

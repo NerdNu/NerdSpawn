@@ -65,8 +65,8 @@ public class NerdSpawnListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
-        if (event.getFrom().getWorld().getEnvironment() == Environment.THE_END && !plugin.getConfig().getBoolean("allow-bed-spawn")) {
-            event.setTo(plugin.getSpawnLocation());
+        if (event.getFrom().getWorld().getEnvironment() == Environment.THE_END && (!plugin.getConfig().getBoolean("allow-bed-spawn") || event.getPlayer().getBedSpawnLocation() == null)) {
+            event.setTo(plugin.getConfig().getBoolean("use-primary-spawn") ? plugin.getPrimarySpawn() : plugin.getSpawnLocation());
         }
     }
 }
