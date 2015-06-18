@@ -8,12 +8,10 @@ author: Travis Watkins
 commands:
   spawn:
     description: Teleports you to the spawn location.
-    permission: nerdspawn.spawn
     usage: |
            Usage: /<command> - Teleport to spawn.
   setspawn:
     description: Sets the spawn location.
-    permission: nerdspawn.setspawn
     usage: |
            Usage: /<command> - Sets spawn location.
   nerdspawn:

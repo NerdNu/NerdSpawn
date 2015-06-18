@@ -2,6 +2,7 @@ package nu.nerd.nerdspawn;
 
 import java.util.ArrayList;
 import java.util.Formatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
@@ -16,6 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 public class NerdSpawn extends JavaPlugin {
     private final NerdSpawnListener listener = new NerdSpawnListener(this);
     List<String> spawnList = new ArrayList<String>();
+    HashMap<Player, Location> _waitingTeleport = new HashMap<Player, Location>();
 
     Formatter f;
 
@@ -181,14 +183,40 @@ public class NerdSpawn extends JavaPlugin {
             sender.sendMessage("Sorry, this plugin cannot be used from console");
             return true;
         }
-        Player player = (Player) sender;
+        final Player player = (Player) sender;
 
-        if (command.getName().equalsIgnoreCase("spawn")) {
+        if (command.getName().equalsIgnoreCase("spawn") && player.hasPermission(Permissions.SPAWN)) {
             ((Player) sender).teleport(getSpawnLocation());
             return true;
         }
+        
+        if (command.getName().equalsIgnoreCase("spawn") && player.hasPermission(Permissions.DELAYSPAWN)) {
+            // Players are already waiting, inform them and return
+            if (_waitingTeleport.containsKey(player)) {
+                player.sendMessage(ChatColor.AQUA + "You are already waiting to be teleported");
+                return true;
+            }
+            
+            // Schedule a runnable for a later time to warp our player, make sure they havent moved while waiting
+            getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+                public void run() {
+                    if (_waitingTeleport.containsKey(player)) {
+                        if (get2dDistSq(player.getLocation(), _waitingTeleport.get(player)) <= 2) {
+                            player.teleport(getSpawnLocation());
+                        } else {
+                            player.sendMessage(ChatColor.AQUA + "You moved during spawn cooldown!");
+                        }
+                        _waitingTeleport.remove(player);
+                    }
+                }
+            }, getConfig().getInt("spawn-delay", 10) * 20);
+            
+            _waitingTeleport.put(player, player.getLocation());
+            player.sendMessage(ChatColor.AQUA + "You have been placed on spawn cooldown, don't move!");
+            return true;
+        }
 
-        if (command.getName().equalsIgnoreCase("setspawn")) {
+        if (command.getName().equalsIgnoreCase("setspawn") && player.hasPermission(Permissions.SETSPAWN)) {
             setSpawn((Player) sender);
             return true;
         }
