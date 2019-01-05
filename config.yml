@@ -1,6 +1,8 @@
 spawn:
+  first-join: world|0.0|70.0|0.0|0.0|0.0
   location:
   - world|0.0|70.0|0.0|0.0|0.0
+
 show-join-message: true
 join-message: "&5Welcome %u to the server!"
 allow-bed-spawn: true
@@ -11,4 +13,5 @@ clear-bed-spawn: true
 radial-spawning: false
 spawn-radius: 150.0
 use-primary-spawn: true
+use-first-join-spawn: false
 spawn-delay: 10

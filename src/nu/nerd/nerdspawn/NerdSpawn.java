@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -55,20 +56,28 @@ public class NerdSpawn extends JavaPlugin {
             if (index == 1) {
                 message.append(ChatColor.GRAY).append("[P] ");
             }
-            message.append(String.format("%s(%d, %d, %d, %s) %sP %5.3f Y %5.3f",
-                ChatColor.YELLOW, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName(),
-                ChatColor.GRAY, loc.getPitch(), loc.getYaw()));
+            message.append(String.format("%s(%d, %d, %d, %s) %sPitch %5.3f Yaw %5.3f",
+                                         ChatColor.YELLOW, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName(),
+                                         ChatColor.GRAY, loc.getPitch(), loc.getYaw()));
             player.sendMessage(message.toString());
             index++;
         }
+
+        if (getConfig().getBoolean("use-first-join-spawn")) {
+            Location loc = getFirstJoinSpawnLocation();
+            player.sendMessage(String.format("%sOn first join, players will spawn at:\n    %s(%d, %d, %d, %s) %sPitch %5.3f Yaw %5.3f",
+                                             ChatColor.GOLD,
+                                             ChatColor.YELLOW, loc.getBlockX(), loc.getBlockY(), loc.getBlockZ(), loc.getWorld().getName(),
+                                             ChatColor.GRAY, loc.getPitch(), loc.getYaw()));
+        }
     }
-    
-    private double get2dDistSq(Location l1, Location l2) {
+
+    public static double get2dDistSq(Location l1, Location l2) {
         double diffX = l1.getX() - l2.getX();
         double diffZ = l1.getZ() - l2.getZ();
         return diffX * diffX + diffZ * diffZ;
     }
-    
+
     public Location getPrimarySpawn() {
         return stringToLocation(spawnList.get(0));
     }
@@ -81,7 +90,22 @@ public class NerdSpawn extends JavaPlugin {
             return stringToLocation(spawnList.get(0));
         }
     }
-    
+
+    /**
+     * Return the spawn location to be used on first join, per the
+     * configuration.
+     * 
+     * @return the spawn location to be used on first join, per the
+     *         configuration.
+     */
+    public Location getFirstJoinSpawnLocation() {
+        return getConfig().getBoolean("use-first-join-spawn") ? stringToLocation(getConfig().getString("spawn.first-join"))
+                                                              : getSpawnLocation();
+    }
+
+    /**
+     * Return a randomly selected
+     */
     public Location getSpawnLocation(Location bed) {
         if (bed == null) {
             return getSpawnLocation();
@@ -90,19 +114,19 @@ public class NerdSpawn extends JavaPlugin {
             return k == 0 ? bed : stringToLocation(spawnList.get(k - 1));
         }
     }
-    
-    public Location getSpawnLocation(Player player, Location center, Location bed) {
+
+    public Location getSpawnLocation(Player player, Location deathLoc, Location bed) {
         if (getConfig().getBoolean("radial-spawning")) {
             List<Location> candidates = new ArrayList<Location>();
             double minDist = -1.0;
             Location closest = null;
-            double radius = getConfig().getDouble("spawn-radius");
-            double rsq = radius * radius;
-            
+            double spawnRadius = getConfig().getDouble("spawn-radius");
+            double spawnRadiusSquared = spawnRadius * spawnRadius;
+
             if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
-                if (bed.getWorld() == center.getWorld()) {
-                    double dsq = get2dDistSq(center, bed);
-                    if (dsq <= rsq) {
+                if (bed.getWorld() == deathLoc.getWorld()) {
+                    double dsq = get2dDistSq(deathLoc, bed);
+                    if (dsq <= spawnRadiusSquared) {
                         candidates.add(bed);
                     } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
                         closest = bed;
@@ -110,12 +134,12 @@ public class NerdSpawn extends JavaPlugin {
                     }
                 }
             }
-            
+
             for (String s : spawnList) {
                 Location loc = stringToLocation(s);
-                if (loc.getWorld() == center.getWorld()) {
-                    double dsq = get2dDistSq(center, loc);
-                    if (dsq <= rsq) {
+                if (loc.getWorld() == deathLoc.getWorld()) {
+                    double dsq = get2dDistSq(deathLoc, loc);
+                    if (dsq <= spawnRadiusSquared) {
                         candidates.add(loc);
                     } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
                         closest = loc;
@@ -133,7 +157,7 @@ public class NerdSpawn extends JavaPlugin {
         } else {
             if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
                 double radius = getConfig().getDouble("bed-radius", 15);
-                if (getConfig().getBoolean("check-bed-radius") && get2dDistSq(center, bed) <= radius * radius) {
+                if (getConfig().getBoolean("check-bed-radius") && get2dDistSq(deathLoc, bed) <= radius * radius) {
                     player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
                     if (getConfig().getBoolean("clear-bed-spawn")) {
                         player.setBedSpawnLocation(null);
@@ -149,18 +173,18 @@ public class NerdSpawn extends JavaPlugin {
         }
     }
 
-    public Location stringToLocation(String location) {
+    public static Location stringToLocation(String location) {
         String[] lp = location.split("\\|");
-        World world = getServer().getWorld(lp[0]);
+        World world = Bukkit.getServer().getWorld(lp[0]);
         return new Location(world,
-                    Double.valueOf(lp[1]),
-                    Double.valueOf(lp[2]),
-                    Double.valueOf(lp[3]),
-                    Float.valueOf(lp[4]),
-                    Float.valueOf(lp[5]));
+            Double.valueOf(lp[1]),
+            Double.valueOf(lp[2]),
+            Double.valueOf(lp[3]),
+            Float.valueOf(lp[4]),
+            Float.valueOf(lp[5]));
     }
 
-    public String locationToString(Location location) {
+    public static String locationToString(Location location) {
         String re = location.getWorld().getName() + "|";
         re += location.getX() + "|";
         re += location.getY() + "|";
@@ -189,16 +213,18 @@ public class NerdSpawn extends JavaPlugin {
             ((Player) sender).teleport(getSpawnLocation());
             return true;
         }
-        
+
         if (command.getName().equalsIgnoreCase("spawn") && player.hasPermission(Permissions.DELAYSPAWN)) {
             // Players are already waiting, inform them and return
             if (_waitingTeleport.containsKey(player)) {
                 player.sendMessage(ChatColor.AQUA + "You are already waiting to be teleported");
                 return true;
             }
-            
-            // Schedule a runnable for a later time to warp our player, make sure they havent moved while waiting
+
+            // Schedule a runnable for a later time to warp our player, make
+            // sure they havent moved while waiting
             getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+                @Override
                 public void run() {
                     if (_waitingTeleport.containsKey(player)) {
                         if (get2dDistSq(player.getLocation(), _waitingTeleport.get(player)) <= 2) {
@@ -210,7 +236,7 @@ public class NerdSpawn extends JavaPlugin {
                     }
                 }
             }, getConfig().getInt("spawn-delay", 10) * 20);
-            
+
             _waitingTeleport.put(player, player.getLocation());
             player.sendMessage(ChatColor.AQUA + "You have been placed on spawn cooldown, don't move!");
             return true;
@@ -284,9 +310,9 @@ public class NerdSpawn extends JavaPlugin {
         }
         spawnList.add(locationToString(loc));
         getServer().getWorlds().get(0).setSpawnLocation(
-                loc.getBlockX(),
-                loc.getBlockY(),
-                loc.getBlockZ());
+                                                        loc.getBlockX(),
+                                                        loc.getBlockY(),
+                                                        loc.getBlockZ());
         player.sendMessage(ChatColor.GRAY + "Spawn set at " +
                            loc.getBlockX() + ", " +
                            loc.getBlockY() + ", " +

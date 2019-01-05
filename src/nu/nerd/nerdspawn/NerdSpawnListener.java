@@ -2,6 +2,7 @@ package nu.nerd.nerdspawn;
 
 import java.util.HashMap;
 
+import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.World.Environment;
@@ -21,7 +22,7 @@ public class NerdSpawnListener implements Listener {
      * Map from player name to most recent death location. Does not survive
      * restarts, sorry.
      */
-    private HashMap<String, Location> deathLocations = new HashMap<String, Location>();
+    private final HashMap<String, Location> deathLocations = new HashMap<String, Location>();
 
     public NerdSpawnListener(NerdSpawn instance) {
         plugin = instance;
@@ -29,14 +30,20 @@ public class NerdSpawnListener implements Listener {
 
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
-        if (!event.getPlayer().hasPlayedBefore()) {
-            event.getPlayer().teleport(plugin.getSpawnLocation());
-            if (plugin.getConfig().getBoolean("show-join-message")) {
-                String message = plugin.getConfig().getString("join-message");
-                message = message.replaceAll("%u", event.getPlayer().getName());
-                for (ChatColor c : ChatColor.values())
-                    message = message.replaceAll(("&" + c.getChar()), c.toString());
+        Player player = event.getPlayer();
 
+        // NOTE: hasPlayedBefore() will return false until the first logout.
+        if (!player.hasPlayedBefore()) {
+            // Teleport the player to first spawn after Multiverse has done it's
+            // spawn thing (2 ticks).
+            Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> {
+                player.teleport(plugin.getFirstJoinSpawnLocation());
+            }, 2);
+
+            if (plugin.getConfig().getBoolean("show-join-message")) {
+                String message = ChatColor.translateAlternateColorCodes('&',
+                                                                        plugin.getConfig().getString("join-message")
+                                                                        .replaceAll("%u", event.getPlayer().getName()));
                 plugin.getServer().broadcastMessage(message);
             }
         }
@@ -65,7 +72,8 @@ public class NerdSpawnListener implements Listener {
 
     @EventHandler(ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
-        if (event.getFrom().getWorld().getEnvironment() == Environment.THE_END && (!plugin.getConfig().getBoolean("allow-bed-spawn") || event.getPlayer().getBedSpawnLocation() == null)) {
+        if (event.getFrom().getWorld().getEnvironment() == Environment.THE_END &&
+            (!plugin.getConfig().getBoolean("allow-bed-spawn") || event.getPlayer().getBedSpawnLocation() == null)) {
             event.setTo(plugin.getConfig().getBoolean("use-primary-spawn") ? plugin.getPrimarySpawn() : plugin.getSpawnLocation());
         }
     }
