@@ -57,10 +57,18 @@ public class NerdSpawnListener implements Listener {
     @EventHandler(ignoreCancelled = true)
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         Player player = event.getPlayer();
+
+        // Player.get/setBedSpawnLocation() methods round to block coords,
+        // spawning the player on the edge of the block, which warps them on top
+        // of walls. Interacts particularly badly with EasySigns. Put them in
+        // the middle of the block.
+        Location bed = player.getBedSpawnLocation();
+        bed.add(0.5, 0.1, 0.5);
+
         if (deathLocations.containsKey(player.getName())) {
-            event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), player.getBedSpawnLocation()));
+            event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), bed));
         } else {
-            event.setRespawnLocation(plugin.getSpawnLocation(player.getBedSpawnLocation()));
+            event.setRespawnLocation(plugin.getSpawnLocation(bed));
         }
 
         // Remove all potion effects. CombatTag lets players keep them when
