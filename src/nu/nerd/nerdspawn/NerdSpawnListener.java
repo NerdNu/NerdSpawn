@@ -63,7 +63,9 @@ public class NerdSpawnListener implements Listener {
         // of walls. Interacts particularly badly with EasySigns. Put them in
         // the middle of the block.
         Location bed = player.getBedSpawnLocation();
-        bed.add(0.5, 0.1, 0.5);
+        if (bed != null) {
+            bed.add(0.5, 0.1, 0.5);
+        }
 
         if (deathLocations.containsKey(player.getName())) {
             event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), bed));
