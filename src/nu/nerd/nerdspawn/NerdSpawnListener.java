@@ -67,11 +67,7 @@ public class NerdSpawnListener implements Listener {
             bed.add(0.5, 0.1, 0.5);
         }
 
-        if (deathLocations.containsKey(player.getName())) {
-            event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), bed));
-        } else {
-            event.setRespawnLocation(plugin.getSpawnLocation(bed));
-        }
+        event.setRespawnLocation(plugin.getSpawnLocation(player, deathLocations.get(player.getName()), bed));
 
         // Remove all potion effects. CombatTag lets players keep them when
         // their NPC double dies.
@@ -80,11 +76,30 @@ public class NerdSpawnListener implements Listener {
         }
     }
 
+    /**
+     * When returning from the end to the overworld, if bed spawns are disabled,
+     * or the player has no bed set, put them at the world spawn.
+     */
     @EventHandler(ignoreCancelled = true)
     public void onPlayerPortal(PlayerPortalEvent event) {
+        // plugin.getLogger().info("onPlayerPortal(): " + event.getCause() +
+        // " from " + formatBlockLoc(event.getFrom()) +
+        // " to " + formatBlockLoc(event.getTo()));
+
         if (event.getFrom().getWorld().getEnvironment() == Environment.THE_END &&
             (!plugin.getConfig().getBoolean("allow-bed-spawn") || event.getPlayer().getBedSpawnLocation() == null)) {
-            event.setTo(plugin.getConfig().getBoolean("use-primary-spawn") ? plugin.getPrimarySpawn() : plugin.getSpawnLocation());
+            event.setTo(plugin.getConfig().getBoolean("use-primary-spawn") ? plugin.getPrimarySpawn() : plugin.getRespawnLocation());
         }
+    }
+
+    // @EventHandler()
+    // public void onPlayerTeleport(PlayerTeleportEvent event) {
+    // plugin.getLogger().info("onPlayerTeleport(): " + event.getCause() +
+    // " from " + formatBlockLoc(event.getFrom()) +
+    // " to " + formatBlockLoc(event.getTo()));
+    // }
+
+    protected String formatBlockLoc(Location loc) {
+        return "(" + loc.getWorld().getName() + "," + loc.getBlockX() + "," + loc.getBlockY() + "," + loc.getBlockZ() + ")";
     }
 }

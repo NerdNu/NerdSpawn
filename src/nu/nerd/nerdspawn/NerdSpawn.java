@@ -1,7 +1,6 @@
 package nu.nerd.nerdspawn;
 
 import java.util.ArrayList;
-import java.util.Formatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
@@ -16,11 +15,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class NerdSpawn extends JavaPlugin {
-    private final NerdSpawnListener listener = new NerdSpawnListener(this);
-    List<String> spawnList = new ArrayList<String>();
-    HashMap<Player, Location> _waitingTeleport = new HashMap<Player, Location>();
-
-    Formatter f;
+    protected final Random random = new Random();
+    protected final NerdSpawnListener listener = new NerdSpawnListener(this);
+    protected List<String> spawnList = new ArrayList<String>();
+    protected HashMap<Player, Location> _waitingTeleport = new HashMap<Player, Location>();
 
     /**
      * Reload the configuration file.
@@ -78,16 +76,35 @@ public class NerdSpawn extends JavaPlugin {
         return diffX * diffX + diffZ * diffZ;
     }
 
+    /**
+     * Return the first listed spawn location, excluding the first-join spawn
+     * location.
+     * 
+     * This will be the normal respawn location for players
+     * 
+     * @return the main spawn location.
+     */
     public Location getPrimarySpawn() {
         return stringToLocation(spawnList.get(0));
     }
 
-    public Location getSpawnLocation() {
+    /**
+     * Return a spawn location from the applicable set of fixed, server-wide
+     * locations.
+     * 
+     * The bed spawn location is not considered as a candidate.
+     * 
+     * If many-spawn is configured, a location is randomly selected from all
+     * spawns that have been set except the first-join spawn. Otherwise, the
+     * primary (first that was defined) spawn location is returned.
+     * 
+     * @return a server-wide spawn location.
+     */
+    public Location getRespawnLocation() {
         if (getConfig().getBoolean("many-spawn") == true) {
-            Random r = new Random();
-            return stringToLocation(spawnList.get(r.nextInt(spawnList.size())));
+            return stringToLocation(spawnList.get(random.nextInt(spawnList.size())));
         } else {
-            return stringToLocation(spawnList.get(0));
+            return getPrimarySpawn();
         }
     }
 
@@ -100,75 +117,38 @@ public class NerdSpawn extends JavaPlugin {
      */
     public Location getFirstJoinSpawnLocation() {
         return getConfig().getBoolean("use-first-join-spawn") ? stringToLocation(getConfig().getString("spawn.first-join"))
-                                                              : getSpawnLocation();
-    }
-
-    /**
-     * Return a randomly selected
-     */
-    public Location getSpawnLocation(Location bed) {
-        if (bed == null) {
-            return getSpawnLocation();
-        } else {
-            int k = new Random().nextInt(spawnList.size() + 1);
-            return k == 0 ? bed : stringToLocation(spawnList.get(k - 1));
-        }
+                                                              : getRespawnLocation();
     }
 
     public Location getSpawnLocation(Player player, Location deathLoc, Location bed) {
         if (getConfig().getBoolean("radial-spawning")) {
-            List<Location> candidates = new ArrayList<Location>();
-            double minDist = -1.0;
-            Location closest = null;
-            double spawnRadius = getConfig().getDouble("spawn-radius");
-            double spawnRadiusSquared = spawnRadius * spawnRadius;
-
-            if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
-                if (bed.getWorld() == deathLoc.getWorld()) {
-                    double dsq = get2dDistSq(deathLoc, bed);
-                    if (dsq <= spawnRadiusSquared) {
-                        candidates.add(bed);
-                    } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
-                        closest = bed;
-                        minDist = dsq;
-                    }
-                }
-            }
-
-            for (String s : spawnList) {
-                Location loc = stringToLocation(s);
-                if (loc.getWorld() == deathLoc.getWorld()) {
-                    double dsq = get2dDistSq(deathLoc, loc);
-                    if (dsq <= spawnRadiusSquared) {
-                        candidates.add(loc);
-                    } else if (candidates.isEmpty() && (dsq < minDist || minDist < 0)) {
-                        closest = loc;
-                        minDist = dsq;
-                    }
-                }
-            }
+            List<Location> candidates = getRadialSpawnCandidates(deathLoc, bed);
             if (!candidates.isEmpty()) {
-                return candidates.get(new Random().nextInt(candidates.size()));
-            } else if (closest != null) {
-                return closest;
-            } else { // No spawns in that World
-                return getConfig().getBoolean("use-primary-spawn") ? getPrimarySpawn() : getSpawnLocation(bed);
+                return randomLocation(candidates);
+            } else {
+                // No spawn locations in that World. Send the player to the
+                // primary spawn, if forced by configuration, or to a spawn
+                // selected from all possible spawns including the bed.
+                return getConfig().getBoolean("use-primary-spawn") ? getPrimarySpawn() : randomLocation(getAllSpawnLocations(bed));
             }
         } else {
             if (getConfig().getBoolean("allow-bed-spawn") && bed != null) {
-                double radius = getConfig().getDouble("bed-radius", 15);
-                if (getConfig().getBoolean("check-bed-radius") && get2dDistSq(deathLoc, bed) <= radius * radius) {
-                    player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
-                    if (getConfig().getBoolean("clear-bed-spawn")) {
-                        player.setBedSpawnLocation(null);
-                        player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
+                if (getConfig().getBoolean("check-bed-radius")) {
+                    final double radius = getConfig().getDouble("bed-radius", 15);
+                    if (deathLoc != null && get2dDistSq(deathLoc, bed) <= radius * radius) {
+                        player.sendMessage(ChatColor.GOLD + "You died too close to your bed. Sending you back to spawn.");
+                        if (getConfig().getBoolean("clear-bed-spawn")) {
+                            player.setBedSpawnLocation(null);
+                            player.sendMessage(ChatColor.GOLD + "You will respawn at spawn until you sleep in a bed.");
+                        }
+                        return getRespawnLocation();
                     }
-                    return getSpawnLocation();
-                } else {
-                    return bed;
                 }
+                return bed;
+
             } else {
-                return getSpawnLocation();
+                // Send the player to global spawn.
+                return getRespawnLocation();
             }
         }
     }
@@ -210,7 +190,7 @@ public class NerdSpawn extends JavaPlugin {
         final Player player = (Player) sender;
 
         if (command.getName().equalsIgnoreCase("spawn") && player.hasPermission(Permissions.SPAWN)) {
-            ((Player) sender).teleport(getSpawnLocation());
+            ((Player) sender).teleport(getRespawnLocation());
             return true;
         }
 
@@ -228,7 +208,7 @@ public class NerdSpawn extends JavaPlugin {
                 public void run() {
                     if (_waitingTeleport.containsKey(player)) {
                         if (get2dDistSq(player.getLocation(), _waitingTeleport.get(player)) <= 2) {
-                            player.teleport(getSpawnLocation());
+                            player.teleport(getRespawnLocation());
                         } else {
                             player.sendMessage(ChatColor.AQUA + "You moved during spawn cooldown!");
                         }
@@ -309,8 +289,7 @@ public class NerdSpawn extends JavaPlugin {
             spawnList.clear();
         }
         spawnList.add(locationToString(loc));
-        getServer().getWorlds().get(0).setSpawnLocation(
-                                                        loc.getBlockX(),
+        getServer().getWorlds().get(0).setSpawnLocation(loc.getBlockX(),
                                                         loc.getBlockY(),
                                                         loc.getBlockZ());
         player.sendMessage(ChatColor.GRAY + "Spawn set at " +
@@ -318,5 +297,83 @@ public class NerdSpawn extends JavaPlugin {
                            loc.getBlockY() + ", " +
                            loc.getBlockZ());
         saveConfiguration();
+    }
+
+    /**
+     * Return a list of candidate spawn locations in the same world as a death
+     * location, for use in radial-spawning.
+     * 
+     * A spawn location is a candidate if it is within the config's spawn-radius
+     * of the player's death location. This means the spawn must be in the same
+     * world as the death. If no spawn location is within spawn-radius of the
+     * player's death, the closest location is chosen as the only candidate. If
+     * there are no spawn locations in the same world, an empty list is
+     * returned.
+     * 
+     * @param deathLoc the location of the player's death; can be null if no
+     *        death since restart.
+     * @param bed the location of the player's bed, or null to not be
+     *        considered.
+     * @return the spawn locations that are within spawn-radius of deathLoc, or
+     *         failing that, the nearest spawn in the same world, or an empty
+     *         list if there is no such spawn location.
+     */
+    protected List<Location> getRadialSpawnCandidates(Location deathLoc, Location bed) {
+        List<Location> candidates = new ArrayList<>();
+        if (deathLoc == null) {
+            return candidates;
+        }
+
+        final double spawnRadius = getConfig().getDouble("spawn-radius");
+        final double spawnRadiusSquared = spawnRadius * spawnRadius;
+
+        Location closest = null;
+        double minDistSq = Double.MAX_VALUE;
+
+        final Location includingBed = getConfig().getBoolean("allow-bed-spawn") ? bed : null;
+        for (Location loc : getAllSpawnLocations(includingBed)) {
+            if (bed.getWorld() == deathLoc.getWorld()) {
+                double distSq = get2dDistSq(deathLoc, loc);
+                if (distSq <= spawnRadiusSquared) {
+                    candidates.add(loc);
+                } else if (distSq < minDistSq) {
+                    minDistSq = distSq;
+                    closest = loc;
+                }
+            }
+        }
+
+        if (candidates.isEmpty()) {
+            candidates.add(closest);
+        }
+
+        return candidates;
+    }
+
+    /**
+     * Return a list of all spawn locations, excluding the first join spawn, but
+     * including the bed spawn location if not null.
+     * 
+     * @param bed the bed spawn location.
+     * @return a list of all spawn locations, with the bed location first if not
+     *         null.
+     */
+    protected List<Location> getAllSpawnLocations(Location bed) {
+        List<Location> locations = new ArrayList<>();
+        if (bed != null) {
+            locations.add(bed);
+        }
+        spawnList.forEach(loc -> locations.add(stringToLocation(loc)));
+        return locations;
+    }
+
+    /**
+     * Return a randomly selected Location from the list of candidates.
+     * 
+     * @param candidates a non-empty list of candidate spawn locations.
+     * @return a radnomly selected Location.
+     */
+    protected Location randomLocation(List<Location> candidates) {
+        return candidates.get(random.nextInt(candidates.size()));
     }
 }
